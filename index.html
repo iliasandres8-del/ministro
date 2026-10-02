@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ministro</title>
+<meta name="theme-color" content="#0E0F12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ministro">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="icon" href="icono-192.png">
+<style>
+  :root {
+    --fondo: #0E0F12; --superficie: #17181C; --borde: #26262A;
+    --texto: #F5F5F4; --suave: #A8A29E; --apagado: #78716C; --acento: #F59E0B;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--texto);
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", Inter, sans-serif; }
+  body { display: flex; flex-direction: column; height: 100dvh;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 10px; }
+  header h1 { margin: 0; font-size: 15px; letter-spacing: 6px; font-weight: 600; color: var(--apagado); }
+  header button { background: none; border: 0; color: var(--apagado); font-size: 14px; padding: 6px; }
+  header button.activo { color: var(--acento); }
+
+  #chat { flex: 1; overflow-y: auto; padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .vacio { margin: auto 0; text-align: center; color: var(--apagado); }
+  .vacio b { display: block; font-size: 30px; font-weight: 600; color: var(--texto); margin-bottom: 8px; }
+  .msg { max-width: 85%; padding: 12px 15px; border-radius: 18px; line-height: 1.4; font-size: 16px; white-space: pre-wrap; }
+  .yo { align-self: flex-end; background: var(--acento); color: #1A1204; border-bottom-right-radius: 6px; }
+  .el { align-self: flex-start; background: var(--superficie); border: 1px solid var(--borde); border-bottom-left-radius: 6px; }
+  .error { color: #FCA5A5; }
+  .pensando span { display: inline-block; width: 7px; height: 7px; margin: 0 2px; border-radius: 50%;
+    background: var(--suave); animation: salto 1.2s infinite ease-in-out; }
+  .pensando span:nth-child(2) { animation-delay: .15s; } .pensando span:nth-child(3) { animation-delay: .3s; }
+  @keyframes salto { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-4px); } }
+
+  footer { padding: 10px 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  #mic { width: 84px; height: 84px; border-radius: 50%; border: 0; background: var(--acento); color: #1A1204;
+    display: grid; place-items: center; box-shadow: 0 0 0 0 rgba(245,158,11,.5); transition: transform .15s; }
+  #mic:active { transform: scale(.95); }
+  #mic.escuchando { animation: pulso 1.2s infinite; background: #FBBF24; }
+  #mic:disabled { opacity: .4; }
+  @keyframes pulso { 0% { box-shadow: 0 0 0 0 rgba(245,158,11,.55); } 100% { box-shadow: 0 0 0 26px rgba(245,158,11,0); } }
+  #estado { font-size: 13px; color: var(--apagado); min-height: 17px; }
+  form { width: 100%; display: flex; gap: 8px; }
+  form input { flex: 1; background: var(--superficie); border: 1px solid var(--borde); color: var(--texto);
+    border-radius: 22px; padding: 12px 16px; font-size: 16px; outline: none; }
+  form input:focus { border-color: var(--apagado); }
+  form button { background: var(--superficie); border: 1px solid var(--borde); color: var(--texto);
+    border-radius: 22px; padding: 0 16px; font-size: 15px; }
+
+  dialog { background: var(--superficie); color: var(--texto); border: 1px solid var(--borde); border-radius: 18px;
+    padding: 22px; width: min(92vw, 380px); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog p { color: var(--suave); line-height: 1.4; margin: 0 0 14px; font-size: 15px; }
+  dialog input { width: 100%; background: var(--fondo); border: 1px solid var(--borde); color: var(--texto);
+    border-radius: 12px; padding: 12px; font-size: 16px; margin-bottom: 12px; }
+  dialog button { width: 100%; background: var(--acento); color: #1A1204; border: 0; border-radius: 12px;
+    padding: 12px; font-size: 16px; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>MINISTRO</h1>
+  <div>
+    <button id="voz" class="activo" aria-pressed="true">Voz: sí</button>
+    <button id="borrar">Limpiar</button>
+  </div>
+</header>
+
+<main id="chat"></main>
+
+<footer>
+  <button id="mic" aria-label="Hablarle a Ministro">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
+  </button>
+  <div id="estado"></div>
+  <form id="formulario" autocomplete="off">
+    <input id="texto" placeholder="Escríbele a Ministro…" enterkeyhint="send">
+    <button type="submit">Enviar</button>
+  </form>
+</footer>
+
+<dialog id="dialogoClave">
+  <form method="dialog" id="formClave">
+    <p>Pega la clave de Ministro (la misma del atajo de Siri). Solo se pide una vez y queda guardada en este celular.</p>
+    <input id="campoClave" placeholder="Clave" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <button type="submit">Guardar</button>
+  </form>
+</dialog>
+
+<script>
+const URL_MINISTRO = "https://qzszwuiehdjndzqfbvsw.supabase.co/functions/v1/ministro";
+
+const $ = (id) => document.getElementById(id);
+const chat = $("chat"), estado = $("estado"), mic = $("mic"), entrada = $("texto");
+
+const guardado = (k, def) => { try { const v = localStorage.getItem(k); return v === null ? def : JSON.parse(v); } catch { return def; } };
+const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let historial = guardado("historial", []);
+let conVoz = guardado("conVoz", true);
+let ocupado = false;
+
+// ---------- Mensajes ----------
+function pintar() {
+  chat.innerHTML = "";
+  if (!historial.length) {
+    chat.innerHTML = '<div class="vacio"><b>Quiubo, Andrés</b>Toca el botón y háblame, o escríbeme abajo.</div>';
+    return;
+  }
+  for (const m of historial) agregarBurbuja(m.quien, m.texto, m.error);
+}
+function agregarBurbuja(quien, texto, error) {
+  const vacio = chat.querySelector(".vacio"); if (vacio) vacio.remove();
+  const d = document.createElement("div");
+  d.className = "msg " + (quien === "yo" ? "yo" : "el") + (error ? " error" : "");
+  d.textContent = texto;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+  return d;
+}
+function anotar(quien, texto, error = false) {
+  historial.push({ quien, texto, error });
+  historial = historial.slice(-40);
+  guardar("historial", historial);
+  agregarBurbuja(quien, texto, error);
+}
+
+// ---------- Clave ----------
+function pedirClave() {
+  return new Promise((ok) => {
+    const d = $("dialogoClave");
+    $("campoClave").value = "";
+    d.showModal();
+    $("formClave").onsubmit = () => {
+      const c = $("campoClave").value.trim();
+      if (c) { guardar("clave", c); ok(c); }
+    };
+    d.onclose = () => { if (!guardado("clave", null)) d.showModal(); };
+  });
+}
+
+// ---------- Voz de salida ----------
+let vozElegida = null;
+function elegirVoz() {
+  const voces = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith("es"));
+  const orden = ["es-co", "es-mx", "es-us", "es-419", "es-es"];
+  voces.sort((a, b) => {
+    const ia = orden.indexOf(a.lang.toLowerCase()), ib = orden.indexOf(b.lang.toLowerCase());
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  vozElegida = voces[0] || null;
+}
+if ("speechSynthesis" in window) { elegirVoz(); speechSynthesis.onvoiceschanged = elegirVoz; }
+
+// En iPhone la voz solo suena si arrancó con un toque: se "desbloquea" al tocar cualquier botón.
+let vozDesbloqueada = false;
+function desbloquearVoz() {
+  if (vozDesbloqueada || !("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u);
+  vozDesbloqueada = true;
+}
+function hablar(texto) {
+  if (!conVoz || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang = vozElegida ? vozElegida.lang : "es-CO";
+  if (vozElegida) u.voice = vozElegida;
+  u.rate = 1.05;
+  speechSynthesis.speak(u);
+}
+
+// ---------- Hablar con el cerebro ----------
+async function enviar(texto) {
+  texto = texto.trim();
+  if (!texto || ocupado) return;
+  let clave = guardado("clave", null) || await pedirClave();
+  ocupado = true; mic.disabled = true;
+  anotar("yo", texto);
+  const pensando = agregarBurbuja("el", "");
+  pensando.classList.add("pensando");
+  pensando.innerHTML = "<span></span><span></span><span></span>";
+  estado.textContent = "Ministro está pensando…";
+  try {
+    const r = await fetch(URL_MINISTRO, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clave, texto }),
+    });
+    const respuesta = await r.text();
+    pensando.remove();
+    if (r.status === 401) {
+      guardar("clave", null);
+      anotar("el", "Esa clave no me sirve, parcero. Vuelve a escribirla.", true);
+    } else if (!r.ok) {
+      anotar("el", "Tuve un problema (" + r.status + "). Intenta otra vez.", true);
+    } else {
+      anotar("el", respuesta);
+      hablar(respuesta);
+    }
+  } catch {
+    pensando.remove();
+    anotar("el", "No me pude conectar. Revisa el internet e intenta otra vez.", true);
+  } finally {
+    ocupado = false; mic.disabled = false; estado.textContent = "";
+  }
+}
+
+$("formulario").addEventListener("submit", (e) => {
+  e.preventDefault(); desbloquearVoz();
+  const t = entrada.value; entrada.value = ""; entrada.blur();
+  enviar(t);
+});
+
+// ---------- Escuchar (micrófono) ----------
+const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, escuchando = false;
+if (Reconocimiento) {
+  rec = new Reconocimiento();
+  rec.lang = "es-CO"; rec.interimResults = true; rec.continuous = false;
+  let final = "";
+  rec.onstart = () => { escuchando = true; final = ""; mic.classList.add("escuchando"); estado.textContent = "Te escucho…"; };
+  rec.onresult = (e) => {
+    let parcial = "";
+    for (const r of e.results) { if (r.isFinal) final = r[0].transcript; else parcial += r[0].transcript; }
+    estado.textContent = final || parcial || "Te escucho…";
+  };
+  rec.onerror = (e) => {
+    estado.textContent = e.error === "not-allowed"
+      ? "Dale permiso al micrófono en Ajustes, o usa el teclado."
+      : "No te entendí. Toca y repite.";
+  };
+  rec.onend = () => {
+    escuchando = false; mic.classList.remove("escuchando");
+    if (final) enviar(final); else if (estado.textContent === "Te escucho…") estado.textContent = "";
+  };
+}
+mic.addEventListener("click", () => {
+  desbloquearVoz();
+  if (!rec) {
+    estado.textContent = "Aquí usa el micrófono del teclado para dictar.";
+    entrada.focus(); return;
+  }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (escuchando) rec.stop(); else { try { rec.start(); } catch {} }
+});
+
+// ---------- Botones de arriba ----------
+function pintarVoz() { $("voz").textContent = "Voz: " + (conVoz ? "sí" : "no"); $("voz").classList.toggle("activo", conVoz); }
+$("voz").addEventListener("click", () => { conVoz = !conVoz; guardar("conVoz", conVoz); pintarVoz(); if (!conVoz) speechSynthesis.cancel(); else desbloquearVoz(); });
+$("borrar").addEventListener("click", () => { historial = []; guardar("historial", historial); pintar(); });
+
+pintarVoz();
+pintar();
+if (!guardado("clave", null)) pedirClave();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
