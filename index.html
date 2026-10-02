@@ -11,58 +11,96 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icono-180.png">
 <link rel="icon" href="icono-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --texto: #FAFAFA; --suave: #A3A3A3; --apagado: #737373; --linea: #1F1F1F; --acento: #F59E0B; }
+  :root { --texto: #F2F2F2; --suave: #B5B5B5; --apagado: #7A7A7A; --linea: #222; --acento: #F5A524; --acento2: #FBBF24; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #000; color: var(--texto); overflow: hidden;
-    font-family: -apple-system, "SF Pro Display", "Segoe UI", Inter, sans-serif; -webkit-user-select: none; user-select: none; }
+    font-family: Jost, -apple-system, "Segoe UI", sans-serif; font-weight: 300; -webkit-user-select: none; user-select: none; }
   body { display: flex; flex-direction: column; height: 100dvh;
-    padding: calc(env(safe-area-inset-top) + 10px) 0 calc(env(safe-area-inset-bottom) + 12px); }
+    padding: calc(env(safe-area-inset-top) + 8px) 0 calc(env(safe-area-inset-bottom) + 10px); }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 
-  header { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; padding: 0 16px; }
-  header h1 { margin: 0; text-align: center; font-size: 12px; font-weight: 500; letter-spacing: 8px; color: var(--apagado); }
-  .icono { width: 44px; height: 44px; display: grid; place-items: center; color: var(--apagado); }
+  header { display: grid; grid-template-columns: 48px 1fr 48px; align-items: start; padding: 0 14px; }
+  .icono { width: 48px; height: 48px; display: grid; place-items: center; color: var(--suave); }
   .icono.activo { color: var(--acento); }
-  #saludo { text-align: center; font-size: 13px; color: var(--apagado); margin-top: 2px; }
+  .marca { text-align: center; padding-top: 8px; }
+  .marca h1 { margin: 0; font-size: 21px; font-weight: 300; letter-spacing: 13px; margin-right: -13px; color: #C9C9C9; }
+  .marca h1 span { color: var(--acento2); text-shadow: 0 0 10px rgba(251,191,36,.8), 0 0 22px rgba(245,165,36,.45); }
+  .marca p { margin: 6px 0 0; font-size: 13px; letter-spacing: 2.5px; color: var(--apagado); }
+
+  #info { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; margin: 22px 26px 0; }
+  .clima .fila { display: flex; align-items: center; gap: 16px; }
+  .clima svg { color: #D4D4D4; flex: none; }
+  #temp { font-size: 38px; font-weight: 300; letter-spacing: 1px; }
+  #ciudad { margin-top: 8px; font-size: 16px; font-weight: 400; color: #E5E5E5; }
+  #cielo { margin-top: 2px; font-size: 14px; color: var(--apagado); }
+  .fecha { border-left: 1px solid; border-image: linear-gradient(transparent, var(--acento), transparent) 1; padding: 6px 0 6px 20px; }
+  #dia { font-size: 11px; letter-spacing: 5px; color: var(--apagado); text-transform: uppercase; }
+  #fechaTxt { margin-top: 6px; font-size: 15px; letter-spacing: 3px; text-transform: uppercase; color: #E5E5E5; padding-bottom: 12px;
+    border-bottom: 1px solid #2A2A2A; }
+  #saludo { margin-top: 12px; font-size: 14px; display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+  #saludo svg { color: var(--acento); flex: none; }
+  #saludo b { color: var(--acento2); font-weight: 400; font-size: 16px; }
 
   #escenario { position: relative; flex: 1; min-height: 0; }
   #esfera { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: manipulation; }
 
-  #estado { text-align: center; font-size: 14px; color: var(--suave); min-height: 20px; transition: color .3s; }
+  #zona { margin: 0 30px; min-height: 92px; display: flex; flex-direction: column; align-items: center; }
+  #frase { display: flex; align-items: center; gap: 14px; font-size: 14px; letter-spacing: 3px; color: var(--suave); text-align: center; }
+  #frase::before { content: ""; width: 1.5px; height: 22px; background: var(--acento); box-shadow: 0 0 8px var(--acento); flex: none; }
+  #respuesta { display: none; max-height: 22vh; overflow-y: auto; text-align: center; font-size: 18px; line-height: 1.42;
+    -webkit-user-select: text; user-select: text; }
+  #respuesta b { color: var(--acento2); font-weight: 400; }
+  #respuesta .tu { display: block; font-size: 13px; letter-spacing: 1px; color: var(--apagado); margin-bottom: 6px; }
+  #zona.charla #frase { display: none; } #zona.charla #respuesta { display: block; }
+  .rayita { width: 68px; height: 1px; margin: 16px auto 8px; background: linear-gradient(90deg, transparent, var(--acento), transparent); }
+  #estado { font-size: 11px; letter-spacing: 2.5px; color: #555; text-transform: uppercase; transition: color .3s; }
   #estado.vivo { color: var(--acento); }
-  #respuesta { margin: 10px 32px 0; min-height: 96px; max-height: 26vh; overflow-y: auto; text-align: center;
-    font-size: 20px; line-height: 1.42; font-weight: 300; -webkit-user-select: text; user-select: text; }
-  #respuesta b { color: var(--acento); font-weight: 500; }
-  #respuesta .tu { display: block; font-size: 14px; color: var(--apagado); margin-bottom: 8px; }
 
-  #barra { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 14px 28px 0; padding-top: 14px; border-top: 1px solid var(--linea); }
-  #barra div { font-size: 11px; color: var(--apagado); letter-spacing: .5px; min-width: 0; }
-  #barra div:nth-child(2) { text-align: center; } #barra div:nth-child(3) { text-align: right; }
-  #barra b { display: block; margin-top: 4px; font-size: 14px; font-weight: 500; color: #E5E5E5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #barra b.alerta { color: var(--acento); }
+  nav { display: grid; grid-template-columns: repeat(4, 1fr); margin: 10px 14px 0; height: 76px; border-radius: 38px;
+    border: 1px solid #262626; background: linear-gradient(#0D0D0D, #070707); position: relative; z-index: 6; }
+  nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    font-size: 13px; color: var(--apagado); position: relative; }
+  nav button.activo { color: var(--acento); }
+  nav button.activo::after { content: ""; position: absolute; bottom: 0; left: 22%; right: 22%; height: 2px; border-radius: 2px;
+    background: var(--acento); box-shadow: 0 0 8px var(--acento); }
 
-  #escribir { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 12px);
-    display: none; gap: 8px; }
+  #teclado { position: fixed; right: 20px; bottom: calc(env(safe-area-inset-bottom) + 100px); width: 38px; height: 38px;
+    border-radius: 50%; border: 1px solid #262626; display: grid; place-items: center; color: var(--apagado); background: #0A0A0A; z-index: 4; }
+  #escribir { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 100px); display: none; gap: 8px; z-index: 7; }
   #escribir.abierto { display: flex; }
-  #escribir input { flex: 1; background: #111; border: 1px solid #262626; color: var(--texto); border-radius: 22px;
-    padding: 13px 16px; font-size: 16px; outline: none; -webkit-user-select: text; user-select: text; }
+  #escribir input { flex: 1; background: #111; border: 1px solid #2A2A2A; color: var(--texto); border-radius: 22px;
+    padding: 13px 16px; font: 400 16px Jost, sans-serif; outline: none; -webkit-user-select: text; user-select: text; }
   #escribir button { width: 46px; border-radius: 50%; background: var(--acento); color: #1A1204; display: grid; place-items: center; }
 
-  #teclado { position: fixed; right: 18px; bottom: calc(env(safe-area-inset-bottom) + 86px); width: 40px; height: 40px;
-    border-radius: 50%; border: 1px solid #262626; display: grid; place-items: center; color: var(--suave); background: #0A0A0A; }
-
-  #historial { position: fixed; inset: 0; background: rgba(0,0,0,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  .hoja { position: fixed; inset: 0; background: rgba(0,0,0,.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     transform: translateY(100%); transition: transform .35s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column;
-    padding: calc(env(safe-area-inset-top) + 14px) 20px calc(env(safe-area-inset-bottom) + 14px); z-index: 5; }
-  #historial.abierto { transform: none; }
-  #historial header { display: flex; justify-content: space-between; padding: 0; margin-bottom: 12px; font-size: 12px; letter-spacing: 6px; color: var(--apagado); }
-  #historial header button { letter-spacing: 0; font-size: 15px; color: var(--suave); }
-  #lista { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; -webkit-user-select: text; user-select: text; }
-  #lista p { margin: 0; font-size: 16px; line-height: 1.4; }
-  #lista p.tu { color: var(--apagado); font-size: 14px; }
-  #lista p b { color: var(--acento); font-weight: 500; }
-  .vacio { color: var(--apagado); text-align: center; margin-top: 30vh; }
+    padding: calc(env(safe-area-inset-top) + 18px) 24px calc(env(safe-area-inset-bottom) + 104px); z-index: 5; }
+  .hoja.abierto { transform: none; }
+  .hoja .titulo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
+    font-size: 12px; letter-spacing: 6px; color: var(--apagado); }
+  .hoja .titulo button { letter-spacing: 1px; font-size: 14px; color: var(--suave); }
+  .cuerpo { flex: 1; overflow-y: auto; -webkit-user-select: text; user-select: text; }
+  .item { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 15px 0; border-bottom: 1px solid #1A1A1A; }
+  .item span { font-size: 16px; color: #E5E5E5; }
+  .item small { font-size: 13px; color: var(--apagado); white-space: nowrap; }
+  .item small.alerta { color: var(--acento); }
+  .seccion { font-size: 11px; letter-spacing: 4px; color: #555; margin: 22px 0 4px; text-transform: uppercase; }
+  .grande { font-size: 46px; font-weight: 300; letter-spacing: 1px; margin-top: 18px; }
+  .grande + p { margin: 4px 0 0; color: var(--apagado); font-size: 14px; letter-spacing: 2px; }
+  .medidor { height: 4px; border-radius: 4px; background: #1A1A1A; margin: 10px 0 6px; overflow: hidden; }
+  .medidor i { display: block; height: 100%; background: var(--acento); box-shadow: 0 0 10px var(--acento); }
+  .ajuste { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 17px 0;
+    border-bottom: 1px solid #1A1A1A; font-size: 16px; color: #E5E5E5; text-align: left; }
+  .ajuste em { font-style: normal; font-size: 13px; color: var(--apagado); }
+  .ajuste em.on { color: var(--acento); }
+  #lista p { margin: 0 0 14px; font-size: 16px; line-height: 1.4; }
+  #lista p.tu { color: var(--apagado); font-size: 14px; margin-bottom: 4px; }
+  #lista p b { color: var(--acento2); font-weight: 400; }
+  .vacio { color: var(--apagado); text-align: center; margin-top: 25vh; }
 
   #conectar { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; justify-content: center;
     padding: 32px; gap: 14px; z-index: 9; text-align: center; }
@@ -70,43 +108,89 @@
   #conectar p { color: var(--suave); line-height: 1.5; margin: 0; }
   #conectar input { background: #111; border: 1px solid #262626; color: var(--texto); border-radius: 14px; padding: 14px;
     font-size: 16px; text-align: center; -webkit-user-select: text; user-select: text; }
-  #conectar button { background: var(--acento); color: #1A1204; border-radius: 14px; padding: 14px; font-weight: 600; }
+  #conectar button { background: var(--acento); color: #1A1204; border-radius: 14px; padding: 14px; font-weight: 500; }
+
+  @media (max-height: 760px) {
+    #info { margin-top: 12px; } #temp { font-size: 32px; } #zona { min-height: 80px; } .rayita { margin: 10px auto 6px; }
+  }
 </style>
 </head>
 <body>
 <header>
   <button class="icono activo" id="voz" aria-label="Voz encendida">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path id="ondasVoz" d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path id="ondasVoz" d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
   </button>
-  <h1>MINISTRO</h1>
+  <div class="marca"><h1>MINISTR<span>O</span></h1><p>Tu asistente personal</p></div>
   <button class="icono" id="abrirHistorial" aria-label="Historial">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
   </button>
 </header>
-<div id="saludo"></div>
+
+<section id="info">
+  <div class="clima">
+    <div class="fila"><span id="iconoClima"></span><span id="temp">--°</span></div>
+    <div id="ciudad">Barranquilla</div>
+    <div id="cielo">&nbsp;</div>
+  </div>
+  <div class="fecha">
+    <div id="dia"></div>
+    <div id="fechaTxt"></div>
+    <div id="saludo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>
+      <span id="saludoTxt"></span>
+    </div>
+  </div>
+</section>
 
 <div id="escenario"><canvas id="esfera" aria-label="Toca para hablar con Ministro"></canvas></div>
 
-<div id="estado">Toca la esfera para hablar</div>
-<div id="respuesta"></div>
-
-<div id="barra">
-  <div>Hoy<b id="datoHoy">—</b></div>
-  <div>Entregas<b id="datoEntrega">—</b></div>
-  <div>Saldo<b id="datoSaldo">—</b></div>
+<div id="zona">
+  <div id="frase"></div>
+  <div id="respuesta"></div>
+  <div class="rayita"></div>
+  <div id="estado">Toca la esfera para hablar</div>
 </div>
 
+<nav>
+  <button class="activo" data-ir="hoy">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></svg>Hoy</button>
+  <button data-ir="entregas">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>Entregas</button>
+  <button data-ir="saldo">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="4" y="13" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="11" rx="1"/><rect x="16" y="4" width="4" height="16" rx="1"/></svg>Saldo</button>
+  <button data-ir="ajustes">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configuración</button>
+</nav>
+
 <button id="teclado" aria-label="Escribir">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
 </button>
 <form id="escribir" autocomplete="off">
   <input id="campo" placeholder="Escríbele a Ministro…" enterkeyhint="send">
   <button type="submit" aria-label="Enviar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 </form>
 
-<section id="historial">
-  <header><span>HISTORIAL</span><span><button id="limpiar">Borrar</button>&nbsp;&nbsp;&nbsp;<button id="cerrarHistorial">Cerrar</button></span></header>
-  <div id="lista"></div>
+<section class="hoja" id="hojaEntregas">
+  <div class="titulo"><span>ENTREGAS</span><button data-cerrar>Cerrar</button></div>
+  <div class="cuerpo" id="listaEntregas"></div>
+</section>
+<section class="hoja" id="hojaSaldo">
+  <div class="titulo"><span>SALDO</span><button data-cerrar>Cerrar</button></div>
+  <div class="cuerpo" id="cuerpoSaldo"></div>
+</section>
+<section class="hoja" id="hojaAjustes">
+  <div class="titulo"><span>CONFIGURACIÓN</span><button data-cerrar>Cerrar</button></div>
+  <div class="cuerpo">
+    <button class="ajuste" id="ajusteVoz">Voz de Ministro <em id="ajusteVozTxt"></em></button>
+    <button class="ajuste" id="limpiar">Borrar historial <em>›</em></button>
+    <button class="ajuste" id="probarVoz">Probar sonido <em>›</em></button>
+    <button class="ajuste" id="reconectar">Desconectar este celular <em>›</em></button>
+    <p style="color:#555;font-size:13px;line-height:1.5;margin-top:22px">Si no se escucha nada en el iPhone, revisa que el botón de silencio del lado no esté en naranja y sube el volumen.</p>
+  </div>
+</section>
+<section class="hoja" id="historial">
+  <div class="titulo"><span>HISTORIAL</span><button data-cerrar>Cerrar</button></div>
+  <div class="cuerpo" id="lista"></div>
 </section>
 
 <section id="conectar">
@@ -131,7 +215,7 @@ $("guardarClave").onclick = () => {
   if (c) { guardar("clave", c); $("conectar").classList.remove("abierto"); cargarEstado(); }
 };
 
-// ---------- Esfera de partículas ----------
+// ---------- Esfera de partículas con órbitas ----------
 const lienzo = $("esfera"), ctx = lienzo.getContext("2d");
 let W = 0, H = 0, DPR = 1;
 function medir() {
@@ -141,18 +225,59 @@ function medir() {
 }
 addEventListener("resize", medir);
 
-const N = 1400, puntos = [];
+const N = 1500, puntos = [];
 for (let i = 0; i < N; i++) {
   const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = i * 2.399963229728653;
-  puntos.push({ x: Math.cos(th) * r, y, z: Math.sin(th) * r, fase: Math.random() * 6.283, ambar: Math.random() < 0.045 });
+  const j = 1 + (Math.random() - 0.5) * 0.05;
+  puntos.push({ x: Math.cos(th) * r * j, y: y * j, z: Math.sin(th) * r * j, fase: Math.random() * 6.283,
+    ambar: Math.random() < 0.06, brillo: Math.random() < 0.012 });
 }
 const ESTADOS = {
-  reposo:     { energia: 0.04, giro: 0.12, tam: 1.00, anillo: 0 },
-  escuchando: { energia: 0.22, giro: 0.30, tam: 1.10, anillo: 0 },
-  pensando:   { energia: 0.10, giro: 1.10, tam: 0.94, anillo: 1 },
-  hablando:   { energia: 0.16, giro: 0.35, tam: 1.04, anillo: 0 },
+  reposo:     { energia: 0.035, giro: 0.12, tam: 1.00, orbita: 0.35, luz: 0.0 },
+  escuchando: { energia: 0.20,  giro: 0.30, tam: 1.08, orbita: 0.7,  luz: 0.5 },
+  pensando:   { energia: 0.09,  giro: 1.10, tam: 0.95, orbita: 2.6,  luz: 0.7 },
+  hablando:   { energia: 0.14,  giro: 0.35, tam: 1.03, orbita: 0.9,  luz: 0.6 },
 };
-let modo = "reposo", act = { ...ESTADOS.reposo }, nivelVoz = 0, angulo = 0, t0 = performance.now();
+const ORBITAS = [
+  { rx: 1.55, ry: 0.42, rot: -0.20, vel: 1.0, chispas: [0.0, 2.2, 3.6] },
+  { rx: 1.30, ry: 1.08, rot: 0.55,  vel: -0.7, chispas: [0.8, 3.9] },
+];
+let modo = "reposo", act = { ...ESTADOS.reposo }, nivelVoz = 0, angulo = 0, giroOrbita = 0, t0 = performance.now();
+
+function orbita(cx, cy, R, o, delante, t) {
+  const rx = R * o.rx, ry = R * o.ry, ini = delante ? 0 : Math.PI, fin = ini + Math.PI;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(o.rot);
+  const g = ctx.createLinearGradient(-rx, 0, rx, 0);
+  const a = (delante ? 0.55 : 0.22) + act.luz * 0.25 + nivelVoz * 0.2;
+  g.addColorStop(0, `rgba(245,165,36,${a * 0.2})`); g.addColorStop(0.5, `rgba(251,191,36,${a})`); g.addColorStop(1, `rgba(245,165,36,${a * 0.2})`);
+  ctx.strokeStyle = g; ctx.lineWidth = delante ? 1 : 0.8;
+  ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, ini, fin); ctx.stroke();
+  for (const c of o.chispas) {
+    let ang = (c + giroOrbita * o.vel) % 6.283; if (ang < 0) ang += 6.283;
+    if ((ang < Math.PI) !== delante) continue;
+    const px = Math.cos(ang) * rx, py = Math.sin(ang) * ry;
+    const b = ctx.createRadialGradient(px, py, 0, px, py, 9);
+    b.addColorStop(0, "rgba(255,236,190,1)"); b.addColorStop(0.25, "rgba(251,191,36,.75)"); b.addColorStop(1, "rgba(245,165,36,0)");
+    ctx.fillStyle = b; ctx.beginPath(); ctx.arc(px, py, 9, 0, 6.283); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function base(cx, cy, R) {
+  const by = cy + R * 1.22;
+  ctx.save(); ctx.translate(cx, by); ctx.scale(1, 0.12);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.9);
+  g.addColorStop(0, `rgba(251,191,36,${0.55 + act.luz * 0.3})`); g.addColorStop(0.25, "rgba(245,165,36,.18)"); g.addColorStop(1, "rgba(245,165,36,0)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, 6.283); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = "rgba(245,165,36,.22)"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(cx, by, R * 0.72, R * 0.085, 0, 0, 6.283); ctx.stroke();
+  ctx.strokeStyle = "rgba(245,165,36,.09)";
+  ctx.beginPath(); ctx.ellipse(cx, by + R * 0.04, R * 1.05, R * 0.13, 0, 0, 6.283); ctx.stroke();
+  const l = ctx.createLinearGradient(cx - R * 0.45, 0, cx + R * 0.45, 0);
+  l.addColorStop(0, "rgba(251,191,36,0)"); l.addColorStop(0.5, "rgba(255,226,160,.95)"); l.addColorStop(1, "rgba(251,191,36,0)");
+  ctx.fillStyle = l; ctx.fillRect(cx - R * 0.45, by - 0.8, R * 0.9, 1.6);
+}
 
 function cuadro(ahora) {
   const t = (ahora - t0) / 1000, dt = Math.min(0.05, (ahora - (cuadro.prev || ahora)) / 1000); cuadro.prev = ahora;
@@ -160,47 +285,55 @@ function cuadro(ahora) {
   for (const k in act) act[k] += (meta[k] - act[k]) * Math.min(1, dt * 3.5);
   if (modo === "hablando") nivelVoz = Math.max(nivelVoz * 0.92, 0.35 + 0.65 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 3.1)));
   else nivelVoz *= 0.9;
-  angulo += dt * act.giro;
+  angulo += dt * act.giro; giroOrbita += dt * act.orbita;
 
   ctx.clearRect(0, 0, W, H);
-  const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.34 * act.tam * (1 + 0.025 * Math.sin(t * 1.6));
-  const halo = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.6);
-  halo.addColorStop(0, `rgba(245,158,11,${0.10 + nivelVoz * 0.12 + act.anillo * 0.06})`);
-  halo.addColorStop(1, "rgba(245,158,11,0)");
+  const cx = W / 2, cy = H * 0.46, R = Math.min(W * 0.31, H * 0.36) * act.tam * (1 + 0.02 * Math.sin(t * 1.6));
+  const halo = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 1.7);
+  halo.addColorStop(0, `rgba(245,165,36,${0.10 + nivelVoz * 0.12 + act.luz * 0.06})`);
+  halo.addColorStop(1, "rgba(245,165,36,0)");
   ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
 
-  const cY = Math.cos(angulo), sY = Math.sin(angulo), inc = -0.35 + 0.08 * Math.sin(t * 0.4), cX = Math.cos(inc), sX = Math.sin(inc);
+  base(cx, cy, R);
+  for (const o of ORBITAS) orbita(cx, cy, R, o, false, t);
+
+  const cY = Math.cos(angulo), sY = Math.sin(angulo), inc = -0.3 + 0.08 * Math.sin(t * 0.4), cX = Math.cos(inc), sX = Math.sin(inc);
   const lista = [];
   for (const p of puntos) {
     const ola = act.energia * Math.sin(p.fase + t * (modo === "escuchando" ? 6 : 3) + p.y * 5)
-              + (modo === "hablando" ? nivelVoz * 0.16 * Math.sin(p.y * 9 + t * 11) : 0);
+              + (modo === "hablando" ? nivelVoz * 0.15 * Math.sin(p.y * 9 + t * 11) : 0);
     const k = 1 + ola;
-    let x = p.x * k, y = p.y * k, z = p.z * k;
+    const x = p.x * k, y = p.y * k, z = p.z * k;
     const x1 = x * cY + z * sY, z1 = -x * sY + z * cY;
     const y1 = y * cX - z1 * sX, z2 = y * sX + z1 * cX;
-    lista.push([x1, y1, z2, p.ambar]);
+    lista.push([x1, y1, z2, p]);
   }
   lista.sort((a, b) => a[2] - b[2]);
-  for (const [x, y, z, ambar] of lista) {
-    const prof = (z + 1) / 2, tam = 0.5 + prof * 1.7;
-    ctx.fillStyle = ambar ? `rgba(251,191,36,${0.35 + prof * 0.65})` : `rgba(250,250,250,${0.08 + prof * 0.82})`;
-    ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, ambar ? tam * 1.5 : tam, 0, 6.283); ctx.fill();
-  }
-  if (act.anillo > 0.02) {
-    for (let i = 0; i < 90; i++) {
-      const a = (i / 90) * 6.283 + t * 1.8, rr = R * (1.32 + 0.03 * Math.sin(i * 3 + t * 4));
-      ctx.fillStyle = `rgba(251,191,36,${act.anillo * (0.25 + 0.6 * ((i % 9) / 9))})`;
-      ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.32, 1.4, 0, 6.283); ctx.fill();
+  for (const [x, y, z, p] of lista) {
+    const prof = (z + 1) / 2, tam = 0.45 + prof * 1.65, px = cx + x * R, py = cy + y * R;
+    if (p.brillo && prof > 0.5) {
+      const tw = 0.6 + 0.4 * Math.sin(t * 2 + p.fase);
+      const b = ctx.createRadialGradient(px, py, 0, px, py, 8);
+      b.addColorStop(0, `rgba(255,230,170,${tw})`); b.addColorStop(1, "rgba(251,191,36,0)");
+      ctx.fillStyle = b; ctx.beginPath(); ctx.arc(px, py, 8, 0, 6.283); ctx.fill();
     }
+    ctx.fillStyle = p.ambar ? `rgba(251,191,36,${0.3 + prof * 0.7})` : `rgba(245,245,245,${0.06 + prof * 0.84})`;
+    ctx.beginPath(); ctx.arc(px, py, p.ambar ? tam * 1.3 : tam, 0, 6.283); ctx.fill();
   }
+  for (const o of ORBITAS) orbita(cx, cy, R, o, true, t);
   requestAnimationFrame(cuadro);
 }
 
+const REPOSO = "Toca la esfera para hablar";
+let volverFrase = null;
 function ponerModo(m, texto) {
   modo = m;
   $("estado").textContent = texto;
   $("estado").classList.toggle("vivo", m !== "reposo");
+  clearTimeout(volverFrase);
+  if (m === "reposo") volverFrase = setTimeout(() => $("zona").classList.remove("charla"), 45000);
 }
+function mostrarRespuesta(html) { $("respuesta").innerHTML = html; $("zona").classList.add("charla"); }
 
 // ---------- Texto con lo importante resaltado ----------
 const escapar = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -208,7 +341,10 @@ const resaltar = (s) => escapar(s).replace(/(\$\s?[\d.,]+|\b\d[\d.,]*\s(?:mil(?:
 
 // ---------- Voz ----------
 let conVoz = leer("conVoz", true), vozElegida = null, audioListo = false;
-function pintarVoz() { $("voz").classList.toggle("activo", conVoz); $("ondasVoz").style.opacity = conVoz ? 1 : 0; }
+function pintarVoz() {
+  $("voz").classList.toggle("activo", conVoz); $("ondasVoz").style.opacity = conVoz ? 1 : 0;
+  $("ajusteVozTxt").textContent = conVoz ? "Encendida" : "Apagada"; $("ajusteVozTxt").classList.toggle("on", conVoz);
+}
 function elegirVoz() {
   const orden = ["es-co", "es-mx", "es-us", "es-419", "es-es"];
   const v = speechSynthesis.getVoices().filter((x) => x.lang.toLowerCase().startsWith("es"));
@@ -228,15 +364,15 @@ function prepararAudio() {
   if ("speechSynthesis" in window) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); }
 }
 function hablar(texto) {
-  if (!conVoz || !("speechSynthesis" in window)) { ponerModo("reposo", "Toca la esfera para hablar"); return; }
+  if (!conVoz || !("speechSynthesis" in window)) { ponerModo("reposo", REPOSO); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(texto);
   u.lang = vozElegida ? vozElegida.lang : "es-CO"; if (vozElegida) u.voice = vozElegida; u.rate = 1.05;
   u.onstart = () => ponerModo("hablando", "Hablando");
   u.onboundary = () => { nivelVoz = 1; };
-  u.onend = u.onerror = () => ponerModo("reposo", "Toca la esfera para hablar");
+  u.onend = u.onerror = () => ponerModo("reposo", REPOSO);
   speechSynthesis.speak(u);
-  setTimeout(() => { if (modo !== "hablando" && !speechSynthesis.speaking) ponerModo("reposo", "Toca la esfera para hablar"); }, 1500);
+  setTimeout(() => { if (modo !== "hablando" && !speechSynthesis.speaking) ponerModo("reposo", REPOSO); }, 1500);
 }
 
 // ---------- Hablar con el cerebro ----------
@@ -246,7 +382,7 @@ async function preguntar(texto) {
   if (!texto || ocupado) return;
   if (!clave()) return pedirConexion();
   ocupado = true;
-  $("respuesta").innerHTML = `<span class="tu">${escapar(texto)}</span>`;
+  mostrarRespuesta(`<span class="tu">${escapar(texto)}</span>`);
   ponerModo("pensando", "Pensando…");
   let resp, error = false;
   try {
@@ -256,9 +392,9 @@ async function preguntar(texto) {
     else if (!r.ok) { resp = "Tuve un problema pensando. Intenta otra vez."; error = true; }
   } catch { resp = "No me pude conectar. Revisa el internet."; error = true; }
   ocupado = false;
-  $("respuesta").innerHTML = `<span class="tu">${escapar(texto)}</span>${resaltar(resp)}`;
+  mostrarRespuesta(`<span class="tu">${escapar(texto)}</span>${resaltar(resp)}`);
   historial.push({ tu: texto, el: resp }); historial = historial.slice(-50); guardar("historial", historial);
-  if (error) ponerModo("reposo", "Toca la esfera para hablar"); else { hablar(resp); cargarEstado(); }
+  if (error) ponerModo("reposo", REPOSO); else { hablar(resp); cargarEstado(); }
 }
 
 // ---------- Escuchar ----------
@@ -271,19 +407,19 @@ if (Reconocer) {
   rec.onresult = (e) => {
     let parcial = "";
     for (const r of e.results) { if (r.isFinal) final = r[0].transcript; else parcial += r[0].transcript; }
-    $("respuesta").innerHTML = `<span class="tu">${escapar(final || parcial)}</span>`;
+    mostrarRespuesta(`<span class="tu">${escapar(final || parcial)}</span>`);
   };
   rec.onerror = (e) => {
     escuchando = false;
-    ponerModo("reposo", e.error === "not-allowed" ? "Activa el micrófono en Ajustes o usa el teclado" : "No te escuché. Toca otra vez");
+    ponerModo("reposo", e.error === "not-allowed" ? "Activa el micrófono o usa el teclado" : "No te escuché. Toca otra vez");
     if (e.error === "not-allowed" || e.error === "service-not-allowed") abrirTeclado();
   };
-  rec.onend = () => { escuchando = false; if (final) preguntar(final); else if (modo === "escuchando") ponerModo("reposo", "Toca la esfera para hablar"); };
+  rec.onend = () => { escuchando = false; if (final) preguntar(final); else if (modo === "escuchando") ponerModo("reposo", REPOSO); };
 }
 lienzo.addEventListener("click", () => {
   prepararAudio();
   if (ocupado) return;
-  if ("speechSynthesis" in window && speechSynthesis.speaking) { speechSynthesis.cancel(); ponerModo("reposo", "Toca la esfera para hablar"); return; }
+  if ("speechSynthesis" in window && speechSynthesis.speaking) { speechSynthesis.cancel(); ponerModo("reposo", REPOSO); return; }
   if (!rec) { abrirTeclado(); return; }
   if (escuchando) rec.stop(); else { try { rec.start(); } catch {} }
 });
@@ -298,17 +434,51 @@ $("escribir").onsubmit = (e) => {
   preguntar(t);
 };
 
-// ---------- Historial ----------
+// ---------- Hojas: entregas, saldo, configuración, historial ----------
+const HOJAS = { entregas: "hojaEntregas", saldo: "hojaSaldo", ajustes: "hojaAjustes" };
+function abrirHoja(nombre) {
+  document.querySelectorAll(".hoja").forEach((h) => h.classList.remove("abierto"));
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("activo", b.dataset.ir === nombre));
+  if (nombre === "entregas") pintarEntregas();
+  if (nombre === "saldo") pintarSaldo();
+  if (HOJAS[nombre]) $(HOJAS[nombre]).classList.add("abierto");
+}
+document.querySelectorAll("nav button").forEach((b) => b.onclick = () => abrirHoja(b.dataset.ir));
+document.querySelectorAll("[data-cerrar]").forEach((b) => b.onclick = () => abrirHoja("hoy"));
+
+function cuando(d) { return d === 0 ? "Hoy" : d === 1 ? "Mañana" : d < 0 ? "Vencida" : `En ${d} días`; }
+function pintarEntregas() {
+  const d = leer("estado", null);
+  if (!d) { $("listaEntregas").innerHTML = '<div class="vacio">Cargando…</div>'; return; }
+  const ent = d.entregas.length
+    ? d.entregas.map((e) => `<div class="item"><span>${escapar(e.titulo)}</span><small class="${e.dias <= 3 ? "alerta" : ""}">${cuando(e.dias)}</small></div>`).join("")
+    : '<div class="item"><span>Nada pendiente</span><small>—</small></div>';
+  const cls = d.clases.length
+    ? d.clases.map((c) => `<div class="item"><span>${escapar(c.tipo === "trabajo" ? "Club F-10" : c.titulo)}</span><small>${hora12(c.hora)}</small></div>`).join("")
+    : '<div class="item"><span>Día libre</span><small>—</small></div>';
+  $("listaEntregas").innerHTML = `<div class="seccion">Próximas</div>${ent}<div class="seccion">Hoy</div>${cls}`;
+}
+function pintarSaldo() {
+  const d = leer("estado", null);
+  if (!d) { $("cuerpoSaldo").innerHTML = '<div class="vacio">Cargando…</div>'; return; }
+  const pct = Math.max(0, Math.min(100, d.ahorro_pct || 0));
+  $("cuerpoSaldo").innerHTML = `<div class="grande">${plata(d.saldo)}</div><p>DISPONIBLE</p>
+    <div class="seccion">Ahorro del mes</div><div class="medidor"><i style="width:${pct}%"></i></div>
+    <div style="font-size:14px;color:#B5B5B5">${String(d.ahorro_pct ?? 0).replace(".", ",")}% de lo que te entró</div>
+    <p style="color:#555;font-size:13px;line-height:1.5;margin-top:26px">Para registrar un gasto, toca la esfera y dile algo como "gasté 8 mil en almuerzo".</p>`;
+}
+
 function pintarHistorial() {
   $("lista").innerHTML = historial.length
     ? historial.map((h) => `<p class="tu">${escapar(h.tu)}</p><p>${resaltar(h.el)}</p>`).join("")
     : '<div class="vacio">Todavía no han hablado.</div>';
   $("lista").scrollTop = $("lista").scrollHeight;
 }
-$("abrirHistorial").onclick = () => { pintarHistorial(); $("historial").classList.add("abierto"); };
-$("cerrarHistorial").onclick = () => $("historial").classList.remove("abierto");
-$("limpiar").onclick = () => { historial = []; guardar("historial", historial); pintarHistorial(); };
-$("voz").onclick = () => { conVoz = !conVoz; guardar("conVoz", conVoz); pintarVoz(); if (conVoz) prepararAudio(); else speechSynthesis.cancel(); };
+$("abrirHistorial").onclick = () => { abrirHoja("hoy"); pintarHistorial(); $("historial").classList.add("abierto"); };
+$("limpiar").onclick = () => { historial = []; guardar("historial", historial); $("limpiar").querySelector("em").textContent = "Listo"; };
+$("voz").onclick = $("ajusteVoz").onclick = () => { conVoz = !conVoz; guardar("conVoz", conVoz); pintarVoz(); if (conVoz) prepararAudio(); else speechSynthesis.cancel(); };
+$("probarVoz").onclick = () => { prepararAudio(); conVoz = true; guardar("conVoz", true); pintarVoz(); hablar("Hola Andrés, aquí estoy."); };
+$("reconectar").onclick = () => { guardar("clave", null); abrirHoja("hoy"); pedirConexion(); };
 
 // ---------- Datos del día ----------
 const plata = (n) => (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString("es-CO");
@@ -318,30 +488,68 @@ async function cargarEstado() {
   try {
     const r = await fetch(URL_MINISTRO, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clave: clave(), modo: "estado" }) });
     if (r.status === 401) { guardar("clave", null); return pedirConexion(); }
-    const d = await r.json();
-    const ahora = new Date().toTimeString().slice(0, 5);
-    const proxima = d.clases.find((c) => c.hora >= ahora) || d.clases[d.clases.length - 1];
-    $("datoHoy").textContent = proxima ? `${hora12(proxima.hora)} ${proxima.tipo === "trabajo" ? "Club" : proxima.titulo}` : "Día libre";
-    const e = d.entregas[0];
-    const corto = e ? e.titulo.replace(/^(taller|proyecto|entrega)(\s+de)?\s+/i, "") : "";
-    $("datoEntrega").textContent = e ? `${e.dias === 0 ? "Hoy" : e.dias === 1 ? "Mañana" : e.dias + " días"} · ${corto.charAt(0).toUpperCase() + corto.slice(1)}` : "Nada";
-    $("datoEntrega").classList.toggle("alerta", !!e && e.dias <= 7);
-    $("datoSaldo").textContent = plata(d.saldo);
-    guardar("estado", d);
+    guardar("estado", await r.json());
+    if ($("hojaEntregas").classList.contains("abierto")) pintarEntregas();
+    if ($("hojaSaldo").classList.contains("abierto")) pintarSaldo();
   } catch {}
 }
 
-function saludar() {
-  const h = new Date().getHours();
-  const s = h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches";
-  const f = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
-  $("saludo").textContent = `${s}, Andrés · ${f}`;
+// ---------- Clima de Barranquilla (Open-Meteo, sin clave) ----------
+const NUBE = '<path d="M7 18h10.5a3.5 3.5 0 0 0 .4-7A5.5 5.5 0 0 0 7.3 10 4 4 0 0 0 7 18z"/>';
+const ICONOS = {
+  sol: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  luna: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  parcial: '<path d="M8.5 7.5a3.6 3.6 0 0 1 6.6 1.3"/><path d="M8.5 3v1.2M3.8 5l.9.8M2.5 9.5h1.2"/><path d="M7.5 20h10a3.3 3.3 0 0 0 .4-6.6A5.2 5.2 0 0 0 7.8 12.5a3.8 3.8 0 0 0-.3 7.5z"/>',
+  nube: NUBE,
+  lluvia: NUBE.replace("18h", "15h").replace("0 0 7 18", "0 0 7 15") + '<path d="M8 18l-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/>',
+  tormenta: NUBE.replace("18h", "15h").replace("0 0 7 18", "0 0 7 15") + '<path d="M12.5 15.5 10.5 19h3l-2 3.5"/>',
+};
+function describir(c, dia) {
+  if (c === 0) return [dia ? "sol" : "luna", "Despejado"];
+  if (c === 1 || c === 2) return [dia ? "parcial" : "nube", "Parcialmente nublado"];
+  if (c === 3) return ["nube", "Nublado"];
+  if (c === 45 || c === 48) return ["nube", "Neblina"];
+  if (c >= 95) return ["tormenta", "Tormenta"];
+  if (c >= 51) return ["lluvia", c >= 80 ? "Aguaceros" : c >= 61 ? "Lluvia" : "Llovizna"];
+  return ["nube", "Nublado"];
+}
+function pintarClima(w) {
+  if (!w) return;
+  const [ico, txt] = describir(w.weather_code, w.is_day);
+  $("iconoClima").innerHTML = `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">${ICONOS[ico]}</svg>`;
+  $("temp").textContent = `${Math.round(w.temperature_2m)}°`;
+  $("cielo").textContent = txt;
+}
+async function cargarClima() {
+  pintarClima(leer("clima", null));
+  try {
+    const r = await fetch("https://api.open-meteo.com/v1/forecast?latitude=10.9685&longitude=-74.7813&current=temperature_2m,weather_code,is_day&timezone=America%2FBogota");
+    const d = await r.json(); guardar("clima", d.current); pintarClima(d.current);
+  } catch {}
 }
 
-medir(); pintarVoz(); saludar(); requestAnimationFrame(cuadro);
+// ---------- Fecha, saludo y frase del día ----------
+const FRASES = [
+  "Un día a la vez, siempre hacia adelante.",
+  "Lo que haces hoy cuenta.",
+  "Constancia le gana a talento.",
+  "Paso a paso se llega lejos.",
+  "Termina lo que empezaste.",
+  "Tu yo del futuro te lo va a agradecer.",
+  "Poco a poco, pero sin parar.",
+];
+function pintarFecha() {
+  const ahora = new Date(), h = ahora.getHours();
+  $("dia").textContent = ahora.toLocaleDateString("es-CO", { weekday: "long" });
+  $("fechaTxt").textContent = ahora.toLocaleDateString("es-CO", { day: "numeric", month: "long" }).replace(" de ", " de ");
+  $("saludoTxt").innerHTML = `${h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches"}, <b>Andrés</b>`;
+  const n = Math.floor((ahora - new Date(ahora.getFullYear(), 0, 0)) / 864e5);
+  $("frase").textContent = FRASES[n % FRASES.length];
+}
+
+medir(); pintarVoz(); pintarFecha(); cargarClima(); requestAnimationFrame(cuadro);
+setInterval(pintarFecha, 60000); setInterval(cargarClima, 20 * 60000);
 if (!clave()) pedirConexion(); else cargarEstado();
-const ultima = historial[historial.length - 1];
-if (ultima) $("respuesta").innerHTML = resaltar(ultima.el);
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
