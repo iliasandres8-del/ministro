@@ -384,7 +384,7 @@ function callar() {
 }
 const hablandoAhora = () => sonando || (hayVoz && speechSynthesis.speaking);
 function pintarJarvis() {
-  $("jarvisTxt").textContent = !usarJarvis ? "Apagada" : jarvisListo ? "Activada" : "Falta la clave de Azure";
+  $("jarvisTxt").textContent = !usarJarvis ? "Apagada" : jarvisListo ? "Activada" : "No disponible ahora";
   $("jarvisTxt").classList.toggle("on", usarJarvis && jarvisListo);
 }
 
