@@ -57,7 +57,7 @@
 
   #ajustes { position: fixed; inset: 0; background: rgba(0,0,0,.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     transform: translateY(100%); transition: transform .35s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column;
-    padding: calc(env(safe-area-inset-top) + 22px) 26px calc(env(safe-area-inset-bottom) + 20px); z-index: 8; }
+    padding: calc(env(safe-area-inset-top) + 22px) 26px calc(env(safe-area-inset-bottom) + 20px); z-index: 8; overflow-y: auto; }
   #ajustes.abierto { transform: none; }
   #ajustes .titulo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
     font-size: 12px; letter-spacing: 6px; color: var(--apagado); }
@@ -66,6 +66,11 @@
     border-bottom: 1px solid #161616; font-size: 16px; color: #E5E5E5; text-align: left; }
   .ajuste em { font-style: normal; font-size: 13px; color: var(--apagado); }
   .ajuste em.on { color: var(--acento); }
+  #listaVoces { display: none; max-height: 38vh; overflow-y: auto; border-bottom: 1px solid #161616; }
+  #listaVoces.abierto { display: block; }
+  #listaVoces button { display: flex; justify-content: space-between; width: 100%; padding: 13px 4px; font-size: 15px; color: #CFCFCF; text-align: left; }
+  #listaVoces button.elegida { color: var(--acento2); }
+  #listaVoces small { color: var(--apagado); font-size: 12px; }
   .nota { color: #4F4F4F; font-size: 13px; line-height: 1.55; margin-top: 24px; }
 
   #conectar { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; justify-content: center;
@@ -110,9 +115,12 @@
 <section id="ajustes">
   <div class="titulo"><span>CONFIGURACIÓN</span><button id="cerrarAjustes">Cerrar</button></div>
   <button class="ajuste" id="ajusteVoz">Voz de Ministro <em id="ajusteVozTxt"></em></button>
+  <button class="ajuste" id="elegirVoz">Tipo de voz <em id="vozNombre">&mdash;</em></button>
+  <div id="listaVoces"></div>
+  <button class="ajuste" id="velocidad">Velocidad <em id="velocidadTxt"></em></button>
   <button class="ajuste" id="probarVoz">Probar sonido <em>›</em></button>
   <button class="ajuste" id="reconectar">Desconectar este celular <em>›</em></button>
-  <p class="nota">Si no se escucha nada en el iPhone, revisa que el botón de silencio del lado no esté en naranja y sube el volumen.</p>
+  <p class="nota">Si no se escucha nada en el iPhone, revisa que el botón de silencio del lado no esté en naranja y sube el volumen. Para m&aacute;s voces y de mejor calidad: Ajustes del iPhone, Accesibilidad, Contenido le&iacute;do, Voces, Espa&ntilde;ol, y descarga una &laquo;mejorada&raquo; o &laquo;premium&raquo;; luego vuelve a abrir Ministro y el&iacute;gela aqu&iacute;.</p>
 </section>
 
 <section id="conectar">
@@ -268,14 +276,35 @@ const resaltar = (s) => escapar(s).replace(/(\$\s?[\d.,]+|\b\d[\d.,]*\s(?:mil(?:
 // ---------- Voz: lee frase por frase a medida que llega la respuesta ----------
 let conVoz = leer("conVoz", true), vozElegida = null, audioListo = false, porLeer = 0;
 function pintarVoz() { $("ajusteVozTxt").textContent = conVoz ? "Encendida" : "Apagada"; $("ajusteVozTxt").classList.toggle("on", conVoz); }
-function elegirVoz() {
+// Voces en español del celular: primero la que él eligió; si no, las de mejor calidad y de Latinoamérica.
+const PAISES = { "es-co": "Colombia", "es-mx": "México", "es-us": "EE. UU.", "es-419": "Latinoamérica", "es-es": "España", "es-ar": "Argentina", "es-cl": "Chile" };
+const calidad = (v) => /premium/i.test(v.name) ? 2 : /mejorad|enhanced/i.test(v.name) ? 1 : 0;
+function vocesEspanol() {
   const orden = ["es-co", "es-mx", "es-us", "es-419", "es-es"];
-  const v = speechSynthesis.getVoices().filter((x) => x.lang.toLowerCase().startsWith("es"));
-  v.sort((a, b) => ((orden.indexOf(a.lang.toLowerCase()) + 99) % 99) - ((orden.indexOf(b.lang.toLowerCase()) + 99) % 99));
-  vozElegida = v[0] || null;
+  const pos = (v) => (orden.indexOf(v.lang.toLowerCase().replace("_", "-")) + 99) % 99;
+  return speechSynthesis.getVoices().filter((x) => x.lang.toLowerCase().startsWith("es"))
+    .sort((a, b) => calidad(b) - calidad(a) || pos(a) - pos(b) || a.name.localeCompare(b.name));
 }
+function elegirVoz() {
+  const v = vocesEspanol(), guardada = leer("vozNombre", null);
+  vozElegida = v.find((x) => x.name === guardada) || v[0] || null;
+  $("vozNombre").textContent = vozElegida ? vozElegida.name : "La del sistema";
+  pintarListaVoces();
+}
+function pintarListaVoces() {
+  $("listaVoces").innerHTML = vocesEspanol().map((v, i) =>
+    `<button data-i="${i}" class="${vozElegida && v.name === vozElegida.name ? "elegida" : ""}">${escapar(v.name)}<small>${PAISES[v.lang.toLowerCase().replace("_", "-")] || v.lang}${calidad(v) ? " · alta calidad" : ""}</small></button>`).join("")
+    || '<p class="nota">Este navegador no tiene voces en español.</p>';
+  $("listaVoces").querySelectorAll("button").forEach((b) => b.onclick = () => {
+    vozElegida = vocesEspanol()[Number(b.dataset.i)]; guardar("vozNombre", vozElegida.name);
+    $("vozNombre").textContent = vozElegida.name; pintarListaVoces();
+    prepararAudio(); callar(); terminoRespuesta = true; decir("Hola Andrés, así sueno yo.");
+  });
+}
+const VELOCIDADES = [[0.95, "Calmada"], [1.07, "Normal"], [1.2, "Rápida"]];
+let velocidad = leer("velocidad", 1.07);
+function pintarVelocidad() { $("velocidadTxt").textContent = (VELOCIDADES.find((x) => x[0] === velocidad) || VELOCIDADES[1])[1]; }
 const hayVoz = "speechSynthesis" in window;
-if (hayVoz) { elegirVoz(); speechSynthesis.onvoiceschanged = elegirVoz; }
 
 // iPhone: la voz solo arranca después de un toque. Además se reproduce un audio mudo para que el
 // teléfono trate la app como "reproduciendo audio" y no la calle el botón de silencio.
@@ -291,7 +320,7 @@ let terminoRespuesta = true;
 function decir(frase) {
   if (!conVoz || !hayVoz || !frase.trim()) return;
   const u = new SpeechSynthesisUtterance(frase.trim());
-  u.lang = vozElegida ? vozElegida.lang : "es-CO"; if (vozElegida) u.voice = vozElegida; u.rate = 1.07;
+  u.lang = vozElegida ? vozElegida.lang : "es-CO"; if (vozElegida) u.voice = vozElegida; u.rate = velocidad;
   porLeer++;
   u.onstart = () => ponerModo("hablando", "Hablando");
   u.onboundary = () => { nivelVoz = 1; };
@@ -377,6 +406,12 @@ $("abrirAjustes").onclick = () => $("ajustes").classList.add("abierto");
 $("cerrarAjustes").onclick = () => $("ajustes").classList.remove("abierto");
 $("ajusteVoz").onclick = () => { conVoz = !conVoz; guardar("conVoz", conVoz); pintarVoz(); if (conVoz) prepararAudio(); else callar(); };
 $("probarVoz").onclick = () => { prepararAudio(); conVoz = true; guardar("conVoz", true); pintarVoz(); terminoRespuesta = true; decir("Hola Andrés, aquí estoy."); };
+$("elegirVoz").onclick = () => { if (hayVoz) elegirVoz(); $("listaVoces").classList.toggle("abierto"); };
+$("velocidad").onclick = () => {
+  const i = VELOCIDADES.findIndex((x) => x[0] === velocidad);
+  velocidad = VELOCIDADES[(i + 1) % VELOCIDADES.length][0]; guardar("velocidad", velocidad); pintarVelocidad();
+  prepararAudio(); callar(); terminoRespuesta = true; decir("Así de rápido te hablo.");
+};
 $("reconectar").onclick = () => { guardar("clave", null); $("ajustes").classList.remove("abierto"); pedirConexion(); };
 
 // ---------- Clima de Barranquilla (Open-Meteo, sin clave) ----------
@@ -410,6 +445,8 @@ function pintarFecha() {
   $("saludo").innerHTML = `${h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches"}, <b>Andrés</b>`;
 }
 
+if (hayVoz) { elegirVoz(); speechSynthesis.onvoiceschanged = elegirVoz; }
+pintarVelocidad();
 medir(); pintarVoz(); pintarFecha(); cargarClima(); requestAnimationFrame(cuadro);
 setInterval(() => { pintarFecha(); colorDelDia(); }, 15000); setInterval(cargarClima, 20 * 60000);
 if (!clave()) pedirConexion();
