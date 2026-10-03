@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --texto: #F2F2F2; --suave: #B5B5B5; --apagado: #6F6F6F; --linea: #1E1E1E; --acento: #F5A524; --acento2: #FBBF24; }
+  :root { --texto: #F2F2F2; --suave: #B5B5B5; --apagado: #6F6F6F; --linea: #1E1E1E; --acento: #0EA5E9; --acento2: #38BDF8; --boton: #03131C; --brillo1: rgba(56,189,248,.75); --brillo2: rgba(14,165,233,.4); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #000; color: var(--texto); overflow: hidden;
     font-family: Jost, -apple-system, "Segoe UI", sans-serif; font-weight: 300; -webkit-user-select: none; user-select: none; }
@@ -25,7 +25,7 @@
 
   header { text-align: center; padding: 0 24px; }
   header h1 { margin: 0; font-size: 19px; font-weight: 300; letter-spacing: 12px; margin-right: -12px; color: #CFCFCF; }
-  header h1 span { color: var(--acento2); text-shadow: 0 0 10px rgba(251,191,36,.75), 0 0 22px rgba(245,165,36,.4); }
+  header h1 span { color: var(--acento2); text-shadow: 0 0 10px var(--brillo1), 0 0 22px var(--brillo2); }
   #linea { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px;
     font-size: 11.5px; letter-spacing: 2.2px; text-transform: uppercase; color: var(--apagado); white-space: nowrap; }
   #linea i { width: 3px; height: 3px; border-radius: 50%; background: var(--acento); opacity: .8; flex: none; }
@@ -53,7 +53,7 @@
   #escribir.abierto { display: flex; }
   #escribir input { flex: 1; background: #0E0E0E; border: 1px solid #2A2A2A; color: var(--texto); border-radius: 22px;
     padding: 13px 16px; font: 400 16px Jost, sans-serif; outline: none; -webkit-user-select: text; user-select: text; }
-  #escribir button { width: 46px; border-radius: 50%; background: var(--acento); color: #1A1204; display: grid; place-items: center; }
+  #escribir button { width: 46px; border-radius: 50%; background: var(--acento); color: var(--boton); display: grid; place-items: center; }
 
   #ajustes { position: fixed; inset: 0; background: rgba(0,0,0,.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     transform: translateY(100%); transition: transform .35s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column;
@@ -74,7 +74,7 @@
   #conectar p { color: var(--suave); line-height: 1.5; margin: 0; }
   #conectar input { background: #111; border: 1px solid #262626; color: var(--texto); border-radius: 14px; padding: 14px;
     font-size: 16px; text-align: center; -webkit-user-select: text; user-select: text; }
-  #conectar button { background: var(--acento); color: #1A1204; border-radius: 14px; padding: 14px; font-weight: 500; }
+  #conectar button { background: var(--acento); color: var(--boton); border-radius: 14px; padding: 14px; font-weight: 500; }
 
   @media (max-height: 760px) { #saludo { margin-top: 14px; font-size: 21px; } #zona { min-height: 90px; } }
 </style>
@@ -160,7 +160,23 @@ const ESTADOS = {
   pensando:   { energia: 0.09,  giro: 1.10, tam: 0.95, orbita: 2.6,  luz: 0.7 },
   hablando:   { energia: 0.14,  giro: 0.35, tam: 1.03, orbita: 0.9,  luz: 0.6 },
 };
-const ALTO = 1.2;
+// ---------- Color del día: azul cielo y gris, uno cada día ----------
+const PALETAS = [
+  { fuerte: "14,165,233", vivo: "56,189,248", claro: "224,242,254", acento: "#0EA5E9", acento2: "#38BDF8", boton: "#03131C" },
+  { fuerte: "150,150,155", vivo: "205,205,210", claro: "245,245,245", acento: "#9A9AA0", acento2: "#D4D4D8", boton: "#141416" },
+];
+let C = PALETAS[0];
+function colorDelDia() {
+  const hoy = new Date();
+  const dia = Math.floor((hoy - new Date(hoy.getFullYear(), 0, 0)) / 864e5);
+  C = PALETAS[dia % PALETAS.length];
+  const s = document.documentElement.style;
+  s.setProperty("--acento", C.acento); s.setProperty("--acento2", C.acento2); s.setProperty("--boton", C.boton);
+  s.setProperty("--brillo1", `rgba(${C.vivo},.75)`); s.setProperty("--brillo2", `rgba(${C.fuerte},.4)`);
+}
+colorDelDia();
+
+const ALTO = 1.2, ANCHO = 1.12;
 const ORBITAS = [
   { rx: 1.55, ry: 0.42, rot: -0.20, vel: 1.0, chispas: [0.0, 2.2, 3.6] },
   { rx: 1.30, ry: 1.08 * ALTO, rot: 0.55,  vel: -0.7, chispas: [0.8, 3.9] },
@@ -172,7 +188,7 @@ function orbita(cx, cy, R, o, delante) {
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(o.rot);
   const g = ctx.createLinearGradient(-rx, 0, rx, 0);
   const a = (delante ? 0.55 : 0.22) + act.luz * 0.25 + nivelVoz * 0.2;
-  g.addColorStop(0, `rgba(245,165,36,${a * 0.2})`); g.addColorStop(0.5, `rgba(251,191,36,${a})`); g.addColorStop(1, `rgba(245,165,36,${a * 0.2})`);
+  g.addColorStop(0, `rgba(${C.fuerte},${a * 0.2})`); g.addColorStop(0.5, `rgba(${C.vivo},${a})`); g.addColorStop(1, `rgba(${C.fuerte},${a * 0.2})`);
   ctx.strokeStyle = g; ctx.lineWidth = delante ? 1 : 0.8;
   ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, ini, fin); ctx.stroke();
   for (const c of o.chispas) {
@@ -180,26 +196,10 @@ function orbita(cx, cy, R, o, delante) {
     if ((ang < Math.PI) !== delante) continue;
     const px = Math.cos(ang) * rx, py = Math.sin(ang) * ry;
     const b = ctx.createRadialGradient(px, py, 0, px, py, 9);
-    b.addColorStop(0, "rgba(255,236,190,1)"); b.addColorStop(0.25, "rgba(251,191,36,.75)"); b.addColorStop(1, "rgba(245,165,36,0)");
+    b.addColorStop(0, `rgba(${C.claro},1)`); b.addColorStop(0.25, `rgba(${C.vivo},.75)`); b.addColorStop(1, `rgba(${C.fuerte},0)`);
     ctx.fillStyle = b; ctx.beginPath(); ctx.arc(px, py, 9, 0, 6.283); ctx.fill();
   }
   ctx.restore();
-}
-
-function base(cx, cy, R) {
-  const by = cy + R * (ALTO + 0.2);
-  ctx.save(); ctx.translate(cx, by); ctx.scale(1, 0.12);
-  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.9);
-  g.addColorStop(0, `rgba(251,191,36,${0.55 + act.luz * 0.3})`); g.addColorStop(0.25, "rgba(245,165,36,.18)"); g.addColorStop(1, "rgba(245,165,36,0)");
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, 6.283); ctx.fill();
-  ctx.restore();
-  ctx.strokeStyle = "rgba(245,165,36,.22)"; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.ellipse(cx, by, R * 0.72, R * 0.085, 0, 0, 6.283); ctx.stroke();
-  ctx.strokeStyle = "rgba(245,165,36,.09)";
-  ctx.beginPath(); ctx.ellipse(cx, by + R * 0.04, R * 1.05, R * 0.13, 0, 0, 6.283); ctx.stroke();
-  const l = ctx.createLinearGradient(cx - R * 0.45, 0, cx + R * 0.45, 0);
-  l.addColorStop(0, "rgba(251,191,36,0)"); l.addColorStop(0.5, "rgba(255,226,160,.95)"); l.addColorStop(1, "rgba(251,191,36,0)");
-  ctx.fillStyle = l; ctx.fillRect(cx - R * 0.45, by - 0.8, R * 0.9, 1.6);
 }
 
 function cuadro(ahora) {
@@ -211,13 +211,13 @@ function cuadro(ahora) {
   angulo += dt * act.giro; giroOrbita += dt * act.orbita;
 
   ctx.clearRect(0, 0, W, H);
-  const cx = W / 2, cy = H * 0.47, R = Math.min(W * 0.31, H * 0.34 / ALTO) * act.tam * (1 + 0.02 * Math.sin(t * 1.6));
+  const cx = W / 2, cy = H * 0.47, R = Math.min(W * 0.335 / ANCHO, H * 0.34 / ALTO) * act.tam * (1 + 0.02 * Math.sin(t * 1.6));
   const halo = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 1.7);
-  halo.addColorStop(0, `rgba(245,165,36,${0.10 + nivelVoz * 0.12 + act.luz * 0.06})`);
-  halo.addColorStop(1, "rgba(245,165,36,0)");
+  halo.addColorStop(0, `rgba(${C.fuerte},${0.10 + nivelVoz * 0.12 + act.luz * 0.06})`);
+  halo.addColorStop(1, `rgba(${C.fuerte},0)`);
   ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
 
-  base(cx, cy, R);
+
   for (const o of ORBITAS) orbita(cx, cy, R, o, false);
 
   const cY = Math.cos(angulo), sY = Math.sin(angulo), inc = -0.3 + 0.08 * Math.sin(t * 0.4), cX = Math.cos(inc), sX = Math.sin(inc);
@@ -233,14 +233,14 @@ function cuadro(ahora) {
   }
   lista.sort((a, b) => a[2] - b[2]);
   for (const [x, y, z, p] of lista) {
-    const prof = (z + 1) / 2, tam = 0.45 + prof * 1.65, px = cx + x * R, py = cy + y * R * ALTO;
+    const prof = (z + 1) / 2, tam = 0.45 + prof * 1.65, px = cx + x * R * ANCHO, py = cy + y * R * ALTO;
     if (p.brillo && prof > 0.5) {
       const tw = 0.6 + 0.4 * Math.sin(t * 2 + p.fase);
       const b = ctx.createRadialGradient(px, py, 0, px, py, 8);
-      b.addColorStop(0, `rgba(255,230,170,${tw})`); b.addColorStop(1, "rgba(251,191,36,0)");
+      b.addColorStop(0, `rgba(${C.claro},${tw})`); b.addColorStop(1, `rgba(${C.vivo},0)`);
       ctx.fillStyle = b; ctx.beginPath(); ctx.arc(px, py, 8, 0, 6.283); ctx.fill();
     }
-    ctx.fillStyle = p.ambar ? `rgba(251,191,36,${0.3 + prof * 0.7})` : `rgba(245,245,245,${0.06 + prof * 0.84})`;
+    ctx.fillStyle = p.ambar ? `rgba(${C.vivo},${0.3 + prof * 0.7})` : `rgba(245,245,245,${0.06 + prof * 0.84})`;
     ctx.beginPath(); ctx.arc(px, py, p.ambar ? tam * 1.3 : tam, 0, 6.283); ctx.fill();
   }
   for (const o of ORBITAS) orbita(cx, cy, R, o, true);
@@ -411,7 +411,7 @@ function pintarFecha() {
 }
 
 medir(); pintarVoz(); pintarFecha(); cargarClima(); requestAnimationFrame(cuadro);
-setInterval(pintarFecha, 15000); setInterval(cargarClima, 20 * 60000);
+setInterval(() => { pintarFecha(); colorDelDia(); }, 15000); setInterval(cargarClima, 20 * 60000);
 if (!clave()) pedirConexion();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
