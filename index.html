@@ -115,7 +115,8 @@
 <section id="ajustes">
   <div class="titulo"><span>CONFIGURACIÓN</span><button id="cerrarAjustes">Cerrar</button></div>
   <button class="ajuste" id="ajusteVoz">Voz de Ministro <em id="ajusteVozTxt"></em></button>
-  <button class="ajuste" id="elegirVoz">Tipo de voz <em id="vozNombre">&mdash;</em></button>
+  <button class="ajuste" id="vozJarvis">Voz Jarvis (Álvaro) <em id="jarvisTxt"></em></button>
+  <button class="ajuste" id="elegirVoz">Voz del celular <em id="vozNombre">&mdash;</em></button>
   <div id="listaVoces"></div>
   <button class="ajuste" id="velocidad">Velocidad <em id="velocidadTxt"></em></button>
   <button class="ajuste" id="probarVoz">Probar sonido <em>›</em></button>
@@ -308,7 +309,16 @@ const hayVoz = "speechSynthesis" in window;
 
 // iPhone: la voz solo arranca después de un toque. Además se reproduce un audio mudo para que el
 // teléfono trate la app como "reproduciendo audio" y no la calle el botón de silencio.
+// Además se prepara el audio de la voz Jarvis: en iPhone con modo "playback" suena aunque esté en silencio.
+const URL_VOZ = "https://qzszwuiehdjndzqfbvsw.supabase.co/functions/v1/ministro-voz";
+let actx = null, usarJarvis = leer("vozJarvis", true), jarvisListo = true;
 function prepararAudio() {
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state !== "running") actx.resume();
+    const b = actx.createBufferSource(); b.buffer = actx.createBuffer(1, 1, 22050); b.connect(actx.destination); b.start(0);
+  } catch {}
   if (audioListo) return; audioListo = true;
   try {
     const mudo = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
@@ -317,17 +327,66 @@ function prepararAudio() {
   if (hayVoz) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); }
 }
 let terminoRespuesta = true;
-function decir(frase) {
-  if (!conVoz || !hayVoz || !frase.trim()) return;
+function alTerminarFrase() { porLeer--; if (porLeer <= 0 && terminoRespuesta && !sonando) { porLeer = 0; ponerModo("reposo", REPOSO); } }
+function decirSistema(frase) {
+  if (!hayVoz) return;
   const u = new SpeechSynthesisUtterance(frase.trim());
   u.lang = vozElegida ? vozElegida.lang : "es-CO"; if (vozElegida) u.voice = vozElegida; u.rate = velocidad;
   porLeer++;
   u.onstart = () => ponerModo("hablando", "Hablando");
   u.onboundary = () => { nivelVoz = 1; };
-  u.onend = u.onerror = () => { porLeer--; if (porLeer <= 0 && terminoRespuesta) { porLeer = 0; ponerModo("reposo", REPOSO); } };
+  u.onend = u.onerror = alTerminarFrase;
   speechSynthesis.speak(u);
 }
-function callar() { if (hayVoz) speechSynthesis.cancel(); porLeer = 0; }
+
+// Voz Jarvis: cada frase se pide al servidor apenas llega (en paralelo) y se reproduce en orden,
+// con un toque metálico (eco muy corto) y más presencia en los agudos.
+let cola = [], sonando = false, tanda = 0, fuente = null;
+function decir(frase) {
+  if (!conVoz || !frase.trim()) return;
+  if (!(usarJarvis && jarvisListo && actx)) return decirSistema(frase);
+  porLeer++;
+  const audio = fetch(URL_VOZ, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clave: clave(), texto: frase.trim(), velocidad }) })
+    .then((r) => r.ok ? r.arrayBuffer() : Promise.reject(r.status))
+    .then((b) => new Promise((ok, mal) => actx.decodeAudioData(b, ok, mal)));
+  cola.push({ audio, frase, tanda });
+  siguienteFrase();
+}
+function siguienteFrase() {
+  if (sonando || !cola.length) return;
+  sonando = true;
+  const item = cola.shift();
+  item.audio.then((buf) => {
+    if (item.tanda !== tanda) return;
+    const src = actx.createBufferSource(); src.buffer = buf;
+    const brillo = actx.createBiquadFilter(); brillo.type = "peaking"; brillo.frequency.value = 3200; brillo.gain.value = 3; brillo.Q.value = 0.8;
+    const cuerpo = actx.createBiquadFilter(); cuerpo.type = "lowshelf"; cuerpo.frequency.value = 180; cuerpo.gain.value = 2;
+    const eco = actx.createDelay(); eco.delayTime.value = 0.011;
+    const vuelta = actx.createGain(); vuelta.gain.value = 0.28;
+    const mezcla = actx.createGain(); mezcla.gain.value = 0.2;
+    src.connect(cuerpo); cuerpo.connect(brillo); brillo.connect(actx.destination);
+    brillo.connect(eco); eco.connect(vuelta); vuelta.connect(eco); eco.connect(mezcla); mezcla.connect(actx.destination);
+    fuente = src;
+    src.onended = () => { if (item.tanda !== tanda) return; fuente = null; sonando = false; alTerminarFrase(); siguienteFrase(); };
+    ponerModo("hablando", "Hablando");
+    src.start();
+  }).catch((e) => {
+    if (item.tanda !== tanda) return;
+    if (e === 503) { jarvisListo = false; pintarJarvis(); }
+    sonando = false; porLeer--; decirSistema(item.frase); siguienteFrase();
+  });
+}
+function callar() {
+  tanda++; cola = []; sonando = false;
+  try { if (fuente) fuente.stop(); } catch {} fuente = null;
+  if (hayVoz) speechSynthesis.cancel(); porLeer = 0;
+}
+const hablandoAhora = () => sonando || (hayVoz && speechSynthesis.speaking);
+function pintarJarvis() {
+  $("jarvisTxt").textContent = !usarJarvis ? "Apagada" : jarvisListo ? "Activada" : "Falta la clave de Azure";
+  $("jarvisTxt").classList.toggle("on", usarJarvis && jarvisListo);
+}
 
 // ---------- Hablar con el cerebro (respuesta en vivo) ----------
 let ocupado = false;
@@ -360,7 +419,7 @@ async function preguntar(texto) {
   ocupado = false; terminoRespuesta = true;
   mostrarRespuesta(tu + resaltar(resp));
   if (!error && leido < resp.length) decir(resp.slice(leido));
-  if (error || !conVoz || !hayVoz || porLeer === 0) ponerModo("reposo", REPOSO);
+  if (error || !conVoz || porLeer === 0) ponerModo("reposo", REPOSO);
 }
 
 // ---------- Escuchar ----------
@@ -385,7 +444,7 @@ if (Reconocer) {
 lienzo.addEventListener("click", () => {
   prepararAudio();
   if (ocupado) return;
-  if (hayVoz && speechSynthesis.speaking) { callar(); ponerModo("reposo", REPOSO); return; }
+  if (hablandoAhora()) { callar(); ponerModo("reposo", REPOSO); return; }
   if (!rec) { abrirTeclado(); return; }
   if (escuchando) rec.stop(); else { try { rec.start(); } catch {} }
 });
@@ -412,6 +471,7 @@ $("velocidad").onclick = () => {
   velocidad = VELOCIDADES[(i + 1) % VELOCIDADES.length][0]; guardar("velocidad", velocidad); pintarVelocidad();
   prepararAudio(); callar(); terminoRespuesta = true; decir("Así de rápido te hablo.");
 };
+$("vozJarvis").onclick = () => { usarJarvis = !usarJarvis; jarvisListo = true; guardar("vozJarvis", usarJarvis); pintarJarvis(); prepararAudio(); callar(); terminoRespuesta = true; decir("Hola Andrés, a sus órdenes."); };
 $("reconectar").onclick = () => { guardar("clave", null); $("ajustes").classList.remove("abierto"); pedirConexion(); };
 
 // ---------- Clima de Barranquilla (Open-Meteo, sin clave) ----------
@@ -446,7 +506,7 @@ function pintarFecha() {
 }
 
 if (hayVoz) { elegirVoz(); speechSynthesis.onvoiceschanged = elegirVoz; }
-pintarVelocidad();
+pintarVelocidad(); pintarJarvis();
 medir(); pintarVoz(); pintarFecha(); cargarClima(); requestAnimationFrame(cuadro);
 setInterval(() => { pintarFecha(); colorDelDia(); }, 15000); setInterval(cargarClima, 20 * 60000);
 if (!clave()) pedirConexion();
