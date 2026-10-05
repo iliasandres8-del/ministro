@@ -398,7 +398,7 @@ async function preguntar(texto) {
   const tu = `<span class="tu">${escapar(texto)}</span>`;
   mostrarRespuesta(tu);
   ponerModo("pensando", "Pensando…");
-  let resp = "", leido = 0, error = false;
+  let resp = "", leido = 0, error = false, espera = null;
   try {
     const r = await fetch(URL_MINISTRO, { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clave: clave(), texto, stream: true }) });
@@ -413,7 +413,14 @@ async function preguntar(texto) {
         mostrarRespuesta(tu + resaltar(resp));
         const corte = Math.max(resp.lastIndexOf(". "), resp.lastIndexOf("? "), resp.lastIndexOf("! "), resp.lastIndexOf(": "));
         if (corte + 1 > leido) { decir(resp.slice(leido, corte + 1)); leido = corte + 1; }
+        // Si la frase ya terminó pero no llega nada más (por ejemplo, mientras busca en internet), se lee sin esperar.
+        clearTimeout(espera);
+        if (/[.?!]\s*$/.test(resp) && leido < resp.trimEnd().length) {
+          const largo = resp.length;
+          espera = setTimeout(() => { if (resp.length === largo && leido < largo) { decir(resp.slice(leido)); leido = largo; } }, 350);
+        }
       }
+      clearTimeout(espera);
     }
   } catch { if (!resp) { resp = "No me pude conectar. Revisa el internet."; error = true; } }
   ocupado = false; terminoRespuesta = true;
