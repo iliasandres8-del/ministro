@@ -55,6 +55,15 @@
     padding: 13px 16px; font: 400 16px Jost, sans-serif; outline: none; -webkit-user-select: text; user-select: text; }
   #escribir button { width: 46px; border-radius: 50%; background: var(--acento); color: var(--boton); display: grid; place-items: center; }
 
+  .derecha { display: flex; gap: 10px; }
+  #fotosPrevias { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 72px); display: none; gap: 8px; z-index: 7; }
+  #fotosPrevias.abierto { display: flex; }
+  #fotosPrevias div { position: relative; }
+  #fotosPrevias img { width: 58px; height: 58px; object-fit: cover; border-radius: 12px; border: 1px solid #2A2A2A; display: block; }
+  #fotosPrevias button { position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%; background: #1A1A1A;
+    border: 1px solid #333; color: var(--suave); font-size: 13px; line-height: 1; }
+  #escribir .clip { background: #0E0E0E; border: 1px solid #2A2A2A; color: var(--suave); }
+
   #ajustes { position: fixed; inset: 0; background: rgba(0,0,0,.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     transform: translateY(100%); transition: transform .35s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column;
     padding: calc(env(safe-area-inset-top) + 22px) 26px calc(env(safe-area-inset-bottom) + 20px); z-index: 8; overflow-y: auto; }
@@ -103,11 +112,19 @@
   <button class="redondo" id="abrirAjustes" aria-label="Configuración">
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
   </button>
+  <div class="derecha">
+  <button class="redondo" id="foto" aria-label="Mandar una foto">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+  </button>
   <button class="redondo" id="teclado" aria-label="Escribir">
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
   </button>
+  </div>
 </div>
+<div id="fotosPrevias"></div>
+<input type="file" id="elegirFoto" accept="image/*" multiple hidden>
 <form id="escribir" autocomplete="off">
+  <button type="button" class="clip" id="fotoEscribir" aria-label="Agregar foto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
   <input id="campo" placeholder="Escríbele a Ministro…" enterkeyhint="send">
   <button type="submit" aria-label="Enviar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 </form>
@@ -392,16 +409,19 @@ function pintarJarvis() {
 let ocupado = false;
 async function preguntar(texto) {
   texto = texto.trim();
-  if (!texto || ocupado) return;
+  if ((!texto && !fotos.length) || ocupado) return;
   if (!clave()) return pedirConexion();
   ocupado = true; terminoRespuesta = false; callar();
-  const tu = `<span class="tu">${escapar(texto)}</span>`;
+  const imagenes = fotos.map((f) => ({ tipo: "image/jpeg", base64: f.split(",")[1] }));
+  const nFotos = imagenes.length ? `[${imagenes.length === 1 ? "1 foto" : imagenes.length + " fotos"}] ` : "";
+  fotos = []; pintarFotos();
+  const tu = `<span class="tu">${escapar(nFotos + texto)}</span>`;
   mostrarRespuesta(tu);
   ponerModo("pensando", "Pensando…");
   let resp = "", leido = 0, error = false, espera = null;
   try {
     const r = await fetch(URL_MINISTRO, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clave: clave(), texto, stream: true }) });
+      body: JSON.stringify({ clave: clave(), texto, stream: true, ...(imagenes.length ? { imagenes } : {}) }) });
     if (r.status === 401) { guardar("clave", null); resp = "Perdí la conexión. Abre otra vez el link del correo."; error = true; }
     else if (!r.ok || !r.body) { resp = "Tuve un problema pensando. Intenta otra vez."; error = true; }
     else {
@@ -460,7 +480,43 @@ lienzo.addEventListener("click", () => {
 function abrirTeclado() { $("escribir").classList.add("abierto"); $("pie").style.visibility = "hidden"; $("campo").focus(); }
 function cerrarTeclado() { $("escribir").classList.remove("abierto"); $("pie").style.visibility = ""; }
 $("teclado").onclick = () => { prepararAudio(); abrirTeclado(); };
-$("campo").onblur = () => setTimeout(() => { if (!$("campo").value) cerrarTeclado(); }, 150);
+$("campo").onblur = () => setTimeout(() => { if (!$("campo").value && !fotos.length) cerrarTeclado(); }, 150);
+
+// ---------- Fotos ----------
+// Se achican en el celular (máx. 1568 px, lo que mejor ve Claude) antes de mandarlas.
+let fotos = [];
+async function achicar(archivo) {
+  const bmp = await createImageBitmap(archivo);
+  const escala = Math.min(1, 1568 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * escala); c.height = Math.round(bmp.height * escala);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close?.();
+  return c.toDataURL("image/jpeg", 0.85);
+}
+function pintarFotos() {
+  const caja = $("fotosPrevias"); caja.innerHTML = "";
+  fotos.forEach((src, i) => {
+    const d = document.createElement("div");
+    d.innerHTML = '<img alt="Foto para Ministro"><button type="button" aria-label="Quitar foto">×</button>';
+    d.querySelector("img").src = src;
+    d.querySelector("button").onclick = () => { fotos.splice(i, 1); pintarFotos(); };
+    caja.appendChild(d);
+  });
+  caja.classList.toggle("abierto", fotos.length > 0);
+  $("campo").placeholder = fotos.length ? "¿Qué hago con la foto? (o mándala así)" : "Escríbele a Ministro…";
+}
+const elegirFoto = () => { prepararAudio(); $("elegirFoto").click(); };
+$("foto").onclick = elegirFoto;
+$("fotoEscribir").onmousedown = (e) => e.preventDefault(); // que no se cierre el teclado al tocarlo
+$("fotoEscribir").onclick = elegirFoto;
+$("elegirFoto").onchange = async (e) => {
+  const archivos = [...e.target.files].slice(0, 4 - fotos.length);
+  e.target.value = "";
+  for (const a of archivos) { try { fotos.push(await achicar(a)); } catch { ponerModo("reposo", "No pude abrir esa foto"); } }
+  pintarFotos();
+  if (fotos.length) abrirTeclado();
+};
 $("escribir").onsubmit = (e) => {
   e.preventDefault(); prepararAudio();
   const t = $("campo").value; $("campo").value = ""; $("campo").blur(); cerrarTeclado();

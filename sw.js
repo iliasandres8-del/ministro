@@ -1,6 +1,6 @@
 // Guarda la app para que abra rápido y funcione como app instalada.
 // Las preguntas a Ministro siempre van por internet (no se guardan aquí).
-const CACHE = "ministro-v10";
+const CACHE = "ministro-v11";
 const ARCHIVOS = ["./", "index.html", "manifest.json", "icono-180.png", "icono-192.png", "icono-512.png"];
 
 self.addEventListener("install", (e) => {
