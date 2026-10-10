@@ -329,6 +329,8 @@ const hayVoz = "speechSynthesis" in window;
 // Además se prepara el audio de la voz Jarvis: en iPhone con modo "playback" suena aunque esté en silencio.
 const URL_VOZ = "https://qzszwuiehdjndzqfbvsw.supabase.co/functions/v1/ministro-voz";
 let actx = null, usarJarvis = leer("vozJarvis", true), jarvisListo = true;
+const SILENCIO = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+const vozEl = new Audio(); vozEl.setAttribute("playsinline", ""); vozEl.preload = "auto";
 function prepararAudio() {
   try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
   try {
@@ -336,6 +338,8 @@ function prepararAudio() {
     if (actx.state !== "running") actx.resume();
     const b = actx.createBufferSource(); b.buffer = actx.createBuffer(1, 1, 22050); b.connect(actx.destination); b.start(0);
   } catch {}
+  // El reproductor de la voz se "desbloquea" con este toque para poder sonar después sin tocar (regla de iPhone).
+  try { if (vozEl.paused) { vozEl.src = SILENCIO; vozEl.play().catch(() => {}); } } catch {}
   if (audioListo) return; audioListo = true;
   try {
     const mudo = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
@@ -361,20 +365,43 @@ function decirSistema(frase) {
 let cola = [], sonando = false, tanda = 0, fuente = null;
 function decir(frase) {
   if (!conVoz || !frase.trim()) return;
-  if (!(usarJarvis && jarvisListo && actx)) return decirSistema(frase);
+  if (!(usarJarvis && jarvisListo)) return decirSistema(frase);
   porLeer++;
   const audio = fetch(URL_VOZ, { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clave: clave(), texto: frase.trim(), velocidad }) })
-    .then((r) => r.ok ? r.arrayBuffer() : Promise.reject(r.status))
-    .then((b) => new Promise((ok, mal) => actx.decodeAudioData(b, ok, mal)));
+    .then((r) => r.ok ? r.arrayBuffer() : Promise.reject(r.status));
   cola.push({ audio, frase, tanda });
   siguienteFrase();
+}
+// En iPhone el audio de la página queda "suspendido" o "interrumpido" después de usar el micrófono o de salir
+// de la app. Se intenta despertar; si no se deja, la frase suena por el reproductor normal (sin el filtro metálico).
+async function contextoVivo() {
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
+  if (!actx) return false;
+  if (actx.state === "running") return true;
+  try { await Promise.race([actx.resume(), new Promise((ok) => setTimeout(ok, 400))]); } catch {}
+  return actx.state === "running";
+}
+function sonarConReproductor(bytes, item) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+  const fin = () => { URL.revokeObjectURL(url); if (item.tanda !== tanda) return; fuente = null; sonando = false; alTerminarFrase(); siguienteFrase(); };
+  vozEl.onended = fin;
+  vozEl.onerror = () => { URL.revokeObjectURL(url); if (item.tanda !== tanda) return; fuente = null; sonando = false; porLeer--; decirSistema(item.frase); siguienteFrase(); };
+  fuente = { stop: () => { vozEl.onended = vozEl.onerror = null; vozEl.pause(); URL.revokeObjectURL(url); } };
+  vozEl.src = url;
+  ponerModo("hablando", "Hablando");
+  vozEl.play().catch(() => vozEl.onerror && vozEl.onerror());
 }
 function siguienteFrase() {
   if (sonando || !cola.length) return;
   sonando = true;
   const item = cola.shift();
-  item.audio.then((buf) => {
+  item.audio.then(async (bytes) => {
+    if (item.tanda !== tanda) return;
+    if (!(await contextoVivo())) return sonarConReproductor(bytes, item);
+    let buf;
+    try { buf = await new Promise((ok, mal) => actx.decodeAudioData(bytes.slice(0), ok, mal)); }
+    catch { return sonarConReproductor(bytes, item); }
     if (item.tanda !== tanda) return;
     const src = actx.createBufferSource(); src.buffer = buf;
     const brillo = actx.createBiquadFilter(); brillo.type = "peaking"; brillo.frequency.value = 3200; brillo.gain.value = 3; brillo.Q.value = 0.8;
@@ -385,7 +412,11 @@ function siguienteFrase() {
     src.connect(cuerpo); cuerpo.connect(brillo); brillo.connect(actx.destination);
     brillo.connect(eco); eco.connect(vuelta); vuelta.connect(eco); eco.connect(mezcla); mezcla.connect(actx.destination);
     fuente = src;
-    src.onended = () => { if (item.tanda !== tanda) return; fuente = null; sonando = false; alTerminarFrase(); siguienteFrase(); };
+    // Seguro: si el iPhone corta el audio a la mitad y no avisa que terminó, igual sigue con la próxima frase.
+    let listo = false;
+    const terminar = () => { if (listo || item.tanda !== tanda) return; listo = true; clearTimeout(reloj); fuente = null; sonando = false; alTerminarFrase(); siguienteFrase(); };
+    const reloj = setTimeout(terminar, (buf.duration + 1.5) * 1000);
+    src.onended = terminar;
     ponerModo("hablando", "Hablando");
     src.start();
   }).catch((e) => {
